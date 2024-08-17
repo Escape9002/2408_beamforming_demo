@@ -1,0 +1,14 @@
+{
+  "language": "Deutsch",
+  "language_other": "English",
+  "user": "Nutzer",
+  "userpl": "Nutzer",
+  "antenna": "Antenne",
+  "antennapl": "Antennen",
+  "ai": "KI",
+  "plot_title": "Beamforming",
+  "power_gain": "Leistungsverstärkung",
+  "signal_strength": "Signalstärke",
+  "wave_overlap_title": "Wellen",
+  "direction": "Richtung"
+}

@@ -1,0 +1,14 @@
+{
+  "language": "English",
+  "language_other": "Deutsch",
+  "user": "User",
+  "userpl": "Users",
+  "antenna": "Antenna",
+  "antennapl": "Antennas",
+  "ai": "AI",
+  "plot_title": "Beamforming",
+  "power_gain": "Power Gain",
+  "signal_strength": "Signal Strength",
+  "wave_overlap_title": "Wave Overlap",
+  "direction": "Direction"
+}
