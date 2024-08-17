@@ -525,7 +525,7 @@ class BeamformingPlot:
 
         self.button_ai_solution.label.set_text(self.strings['ai'])
         self.button_language_toggle.label.set_text(self.strings['language_other'])
-        self.button_user_toggle.label.set_text(f'2 {self.strings["userpl"]}' if self.user_num == 3 else f'3 {self.strings["userpl"]}')
+        self.button_user_toggle.label.set_text(self.strings["less_users"] if self.user_num == 3 else self.strings["more_users"])
 
         for user_id, text in enumerate(self.text_user_pos):
             text.set_text(f'{self.strings["user"]} {user_id+1}')

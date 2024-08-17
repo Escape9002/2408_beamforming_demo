@@ -10,5 +10,7 @@
   "power_gain": "Power Gain",
   "signal_strength": "Signal Strength",
   "wave_overlap_title": "Wave Overlap",
-  "direction": "Direction"
+  "direction": "Direction",
+  "more_users": "More Users",
+  "less_users": "Less Users"
 }

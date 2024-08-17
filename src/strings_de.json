@@ -10,5 +10,7 @@
   "power_gain": "Leistungsverstärkung",
   "signal_strength": "Signalstärke",
   "wave_overlap_title": "Wellen",
-  "direction": "Richtung"
+  "direction": "Richtung",
+  "more_users": "Mehr\nNutzer",
+  "less_users": "Weniger\nNutzer"
 }
