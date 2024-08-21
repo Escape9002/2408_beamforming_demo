@@ -1,0 +1,26 @@
+
+\usetikzlibrary{
+	math,  % required for calculations
+}
+
+\def\person#1#2#3#4{
+	\begin{scope}[shift={#1}, rotate=#2, scale=#3, thick, #4]
+		\tikzmath{%
+			real \width;
+			\width = 1;
+			real \xleft \xright \bodyradius \headradius \headcentery;
+			\xleft = -0.5 * \width;
+			\xright = 0.5 * \width;
+			\bodyradius = 0.5 * \width;
+			\headradius = 0.2 * \width;
+			\headcentery = 0.6 * \width;
+		}
+		
+		% lower body
+		\draw [] (\xleft, 0.1) -- (\xleft, 0) -- (\xright, 0) -- (\xright, 0.1);
+		\draw [] (\xright, 0.1) arc[start angle=0, end angle=180, x radius=\bodyradius, y radius=0.4 * \bodyradius];
+		
+		% head
+		\draw [] (0, \headcentery) circle (\headradius);
+	\end{scope}
+}

@@ -246,50 +246,36 @@ class SoftActorCritic:
                 )
 
             value_network_input_batch = tf.concat([states, actions], axis=1)
-            network = self.networks['value'][0]['primary']
-            with tf.GradientTape() as tape:  # Autograd
-                estimated_q = network.call(value_network_input_batch, training=True)
-                td_error = estimated_q - target_q
-                # todo 1: l2 norm calculated currently even when scale=0 -> performance loss
-                # from bengio deep learning book: we note
-                # that for neural networks, we typically choose to use a parameter norm penalty
-                # Ω that only penalizes the interaction weights, i.e we leave the offsets unregular-
-                # ized. The offsets typically require less data to fit accurately than the weights.
-                # Each weight specifies how two variables interact. Fitting the weigth well requires
-                # observing both variables in a variety of conditions. Each offset controls only a
-                # single variable. This means that we do not induce too much variance by leaving
-                # the offsets unregularized. Also, regularizing the offsets can introduce a significant
-                # amount of underfitting.
-                l2_norm_loss = self.l2_norm_scale_value * tf.reduce_sum(
-                    [
-                        tf.reduce_sum(tf.square(weights_layer)) if tf.rank(weights_layer) == 2 else 0.0  # only mult. weights
-                        for weights_layer in network.trainable_weights
 
-                    ]
-                )
-                value_loss = (
-                    tf.reduce_mean(sample_importance_weights * td_error ** 2)
-                    + l2_norm_loss
-                )
-            gradients = tape.gradient(target=value_loss, sources=network.trainable_variables)
-            network.optimizer.apply_gradients(zip(gradients, network.trainable_variables))
+            for network in [self.networks['value'][0]['primary'], self.networks['value'][1]['primary']]:
 
-            network = self.networks['value'][1]['primary']
-            with tf.GradientTape() as tape:  # Autograd
-                estimated_q = network.call(value_network_input_batch, training=True)
-                td_error = estimated_q - target_q
-                l2_norm_loss = self.l2_norm_scale_value * tf.reduce_sum(
-                    [
-                        tf.reduce_sum(tf.square(weights_layer)) if tf.rank(weights_layer) == 2 else 0.0  # only mult. weights
-                        for weights_layer in network.trainable_weights
-                    ]
-                )
-                value_loss = (
-                    tf.reduce_mean(sample_importance_weights * td_error ** 2)
-                    + l2_norm_loss
-                )
-            gradients = tape.gradient(target=value_loss, sources=network.trainable_variables)
-            network.optimizer.apply_gradients(zip(gradients, network.trainable_variables))
+                with tf.GradientTape() as tape:  # Autograd
+                    estimated_q = network.call(value_network_input_batch, training=True)
+                    td_error = estimated_q - target_q
+                    # todo 1: l2 norm calculated currently even when scale=0 -> performance loss
+                    # from bengio deep learning book: we note
+                    # that for neural networks, we typically choose to use a parameter norm penalty
+                    # Ω that only penalizes the interaction weights, i.e we leave the offsets unregular-
+                    # ized. The offsets typically require less data to fit accurately than the weights.
+                    # Each weight specifies how two variables interact. Fitting the weigth well requires
+                    # observing both variables in a variety of conditions. Each offset controls only a
+                    # single variable. This means that we do not induce too much variance by leaving
+                    # the offsets unregularized. Also, regularizing the offsets can introduce a significant
+                    # amount of underfitting.
+
+                    l2_norm_loss = 0.0
+                    if self.l2_norm_scale_value != 0:
+                        for weights_layer in network.trainable_variables[0::2]:  # skip bias layers
+                            l2_norm_loss += tf.reduce_sum(tf.square(weights_layer))  # sum instead of mean is fine because every weight affects only itself
+                        l2_norm_loss = self.l2_norm_scale_value * l2_norm_loss  # w_new = w_old - lr * d Loss / d_w - lr * norm_scale * w_old
+
+                    value_loss = (
+                        tf.reduce_mean(sample_importance_weights * td_error ** 2)
+                        + l2_norm_loss
+                    )
+                gradients = tape.gradient(target=value_loss, sources=network.trainable_variables)
+                gradients = [tf.clip_by_value(gradient, -1, 1) for gradient in gradients]  # clip gradients
+                network.optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
             self.update_target_networks(tau_target_update_momentum=self.training_target_update_momentum_tau)
 
@@ -302,29 +288,53 @@ class SoftActorCritic:
                     policy_action_log_prob_densities,
                 ) = network.get_action_and_log_prob_density(state=policy_network_input_batch, training=True)
                 policy_actions, policy_action_log_prob_densities = self.bound_actions_and_log_prob_densities(policy_actions, policy_action_log_prob_densities)
+                mean_log_prob_densities = tf.reduce_mean(policy_action_log_prob_densities)
                 value_network_input_batch = tf.concat([states, policy_actions], axis=1)
                 # target or primary? primary -> faster updates, target -> stable but delayed
                 value_estimate_1 = self.networks['value'][0]['primary'].call(value_network_input_batch)
                 value_estimate_2 = self.networks['value'][1]['primary'].call(value_network_input_batch)
                 value_estimate_min = tf.reduce_min([value_estimate_1, value_estimate_2], axis=0)
-                l2_norm_loss = self.l2_norm_scale_policy * tf.reduce_sum([tf.reduce_sum(tf.square(weights_layer)) for weights_layer in network.trainable_weights])
-                policy_loss = tf.reduce_mean(
+
+                l2_norm_loss = 0.0
+                if self.l2_norm_scale_policy != 0:
+                    for weights_layer in network.trainable_variables[0::2]:  # skip bias layers
+                        l2_norm_loss += tf.reduce_sum(tf.square(weights_layer))  # sum instead of mean is fine because every weight affects only itself
+                    l2_norm_loss = self.l2_norm_scale_policy * l2_norm_loss  # w_new = w_old - lr * d Loss / d_w - lr * norm_scale * w_old
+
+                policy_loss = (
                     # pull towards high value:
-                    sample_importance_weights * -value_estimate_min
+                    tf.reduce_mean(sample_importance_weights * -value_estimate_min)
                     # pulls towards high variance - we want to minimize mean log probs -> more uncertainty:
-                    + tf.exp(self.log_entropy_scale_alpha) * policy_action_log_prob_densities
-                    + l2_norm_loss  # todo: we can probably move this out of the reduce_mean
+                    + tf.exp(self.log_entropy_scale_alpha) * mean_log_prob_densities
+                    + l2_norm_loss
                 )
+
             gradients = tape.gradient(target=policy_loss, sources=network.trainable_variables)
+            # gradients = [tf.clip_by_value(gradient, -1, 1) for gradient in gradients]  # clip gradients
             network.optimizer.apply_gradients(zip(gradients, network.trainable_variables))
 
-        if toggle_train_entropy_scale_alpha:
-            with tf.GradientTape() as tape:
-                # if (logprobs (negative) + target entropy) > 0, increase weight of variance
-                #  to encourage higher variance, thus bringing logprobs + target entropy closer to zero
-                alpha_loss = -self.log_entropy_scale_alpha * tf.reduce_mean(
-                    tf.add(policy_action_log_prob_densities, self.target_entropy))
-            alpha_gradients = tape.gradient(target=alpha_loss, sources=[self.log_entropy_scale_alpha])
-            self.entropy_scale_alpha_optimizer.apply_gradients(zip(alpha_gradients, [self.log_entropy_scale_alpha]))
+            # tf.print(tf.reduce_mean(sample_importance_weights * -value_estimate_min))
+            # tf.print(tf.exp(self.log_entropy_scale_alpha))
+            # tf.print(tf.exp(self.log_entropy_scale_alpha) * mean_log_prob_densities)
+            # tf.print(l2_norm_loss)
+            # tf.print(tf.reduce_sum([tf.reduce_sum(tf.square(weights_layer)) for weights_layer in network.trainable_weights]))
+            # tf.print(policy_action_log_prob_densities, mean_log_prob_densities)
 
-        return tf.reduce_mean(policy_action_log_prob_densities), value_loss, td_error
+        if toggle_train_entropy_scale_alpha:
+            # target > current: decrease alpha: deemphasize randomness next learning step
+            # target < current: increase alpha: emphasize randomness next learning step
+            # smaller number = more random
+            alpha_loss = tf.stop_gradient(
+                self.target_entropy - mean_log_prob_densities
+            )
+            if alpha_loss > 0.0:
+                alpha_loss = 10 * alpha_loss  # catch too high randomness more quickly?
+            # else:
+            #     alpha_loss = tf.square(alpha_loss)  # start pulling more strongly if we get too comfy?
+            self.log_entropy_scale_alpha.assign_sub(1e-3 * alpha_loss)
+
+        # tf.print(tf.exp(self.log_entropy_scale_alpha))
+        # tf.print(alpha_loss)
+        # tf.print(tf.reduce_mean(policy_action_log_prob_densities))
+
+        return mean_log_prob_densities, value_loss, td_error

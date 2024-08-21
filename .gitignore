@@ -21,3 +21,10 @@ venv/
 
 /.pylintrc
 nohup.out
+
+*.aux
+*.auxlock
+*.dpth
+*.synctex.gz
+*.md5
+*.log

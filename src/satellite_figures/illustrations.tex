@@ -1,0 +1,48 @@
+
+\documentclass{scrartcl}
+
+\usepackage{tikz}
+\usetikzlibrary{%
+	positioning,				% relative positioning
+	external,
+}
+\tikzset{%
+	external/system call={pdflatex \tikzexternalcheckshellescape -halt-on-error 
+		-interaction=batchmode -jobname "\image" "\texsource" && % or ;
+		pdftops -eps "\image".pdf
+	}
+}
+
+\tikzexternalize[]
+
+\begin{document}
+	
+	\definecolor{unired1}{RGB}			{157,  34,  70}
+	\definecolor{unired2}{RGB}			{213,  12,  47}  % < main
+	\definecolor{unired3}{RGB}			{243, 156, 169}
+	\definecolor{uniblue1}{RGB}			{  0,  50, 109}  % < main
+	\definecolor{uniblue2}{RGB}			{  0, 104, 180}
+	\definecolor{uniblue3}{RGB}			{137, 180, 225}
+	\definecolor{unipurple1}{RGB}		{ 59,  41, 106}
+	\definecolor{unipurple2}{RGB}		{134, 129, 177}
+	\definecolor{unipurple3}{RGB}		{199, 193, 225}
+	\definecolor{unipeach1}{RGB}		{212,  91, 101}
+	\definecolor{unipeach2}{RGB}		{244, 161, 152}
+	\definecolor{unipeach3}{RGB}		{251, 218, 210}
+	\definecolor{uniorange1}{RGB}		{247, 166,   0}
+	\definecolor{uniorange2}{RGB}		{254, 206,  67}
+	\definecolor{uniorange3}{RGB}		{255, 231, 182}
+	\definecolor{unigreen1}{RGB}		{  0, 136, 120}
+	\definecolor{unigreen2}{RGB}		{138, 203, 183}
+	\definecolor{unigreen3}{RGB}		{214, 235, 225}
+	\definecolor{uniyellow1}{RGB}		{222, 220,   0}
+	\definecolor{uniyellow2}{RGB}		{246, 233,  69}
+	\definecolor{uniyellow3}{RGB}		{255, 248, 189}
+	
+	\input{2ant2usr.tex}
+	\input{3ant2usr.tex}
+	\input{4ant2usr.tex}
+	\input{2ant3usr.tex}
+	\input{3ant3usr.tex}
+	\input{4ant3usr.tex}
+\end{document}

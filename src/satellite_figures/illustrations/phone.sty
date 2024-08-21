@@ -1,0 +1,27 @@
+
+\usetikzlibrary{
+	math,  % required for calculations
+}
+
+\def\phone#1#2#3#4{
+	\begin{scope}[shift={#1}, rotate=#2, scale=#3, thick, #4]
+		\tikzmath{%
+			real \width \height \bezeldist;
+			\width = 1;
+			\height = 1.8 * \width;
+			\bezeldist = 0.1;  % relative to border
+			real \xleft \xright;
+			\xleft = -0.5 * \width;
+			\xright = 0.5 * \width;
+			\bezelbottomy = \bezeldist * \height;
+			\bezeltopy = (1-\bezeldist) * \height;
+		}
+		
+		% outer
+		\draw [rounded corners=1] (\xleft, 0) rectangle +(\width, \height);
+		
+		% bezels
+		\draw [] (\xleft, \bezelbottomy) -- (\xright, \bezelbottomy);
+		\draw [] (\xleft, \bezeltopy) -- (\xright, \bezeltopy);
+	\end{scope}
+}

@@ -1,0 +1,30 @@
+
+\usetikzlibrary{
+	math,  % required for calculations
+}
+
+\def\computer#1#2#3#4{
+	\begin{scope}[shift={#1}, rotate=#2, scale=#3, thick, #4]
+		\tikzmath{%
+			real \keyboardwidth;
+			\keyboardwidth = 1;
+			\ypadscreen = 0.05;
+			\xleft = -0.5 * \keyboardwidth;
+			\xpadscreen = 0.05 * \keyboardwidth;
+			\xscreenleft = \xleft + \xpadscreen;
+			\screenwidth = \keyboardwidth - 2 * \xpadscreen;
+			\screenheight = 0.6 * \keyboardwidth;
+		}
+		
+		% keyboard
+		\draw []
+		(\xleft, 0)
+		--
+		+(\keyboardwidth, 0)
+		;
+		
+		% screen
+		\draw [rounded corners=1] (\xscreenleft, \ypadscreen) rectangle +(\screenwidth, \screenheight);
+		
+	\end{scope}
+}

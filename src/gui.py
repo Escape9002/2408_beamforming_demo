@@ -8,6 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, Slider
 import numpy as np
+import pdf2image
 
 from src.config.config import Config
 from src.utils.satellite_functions import get_steering_vec, get_aods
@@ -18,6 +19,13 @@ def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return array[idx]
+
+
+def get_relative_font_size(font_size, window_height_px) -> float:
+    """
+    pt to px conversion
+    """
+    return font_size * (96 / 72) / window_height_px
 
 
 class BeamformingPlot:
@@ -32,7 +40,7 @@ class BeamformingPlot:
         # get window info todo there has to be a better way to get this data
         root = tkinter.Tk()
         root.withdraw()
-        window_width, window_height = root.winfo_screenwidth(), root.winfo_screenheight()
+        self.window_width, self.window_height = root.winfo_screenwidth(), root.winfo_screenheight()
 
         self.config = Config()
 
@@ -50,18 +58,23 @@ class BeamformingPlot:
         self.logo_img_height = 100  # in pixels
         self.button_width = 0.1  # relative
         self.button_height = 0.1  # relative
-        self.button_pad_horizontal = 30 / window_width  # relative
-        self.button_pad_vertical = 30 / window_height  # relative
+        self.button_pad_horizontal = 30 / self.window_width  # relative
+        self.button_pad_vertical = 30 / self.window_height  # relative
+        self.logo_img_height_relative = self.logo_img_height / self.window_height
+
+        self.scenario_image_width = 0.20  # relative
+        self.scenario_image_height = 0.20  # relative
 
         self.overlap_plot_height = 0.10  # relative
         self.slider_height = 0.05  # relative, slider uses half available height
         self.slider_pad_vertical = 0.00  # relative
 
+
         self.slider_args = {
             'valmin': 0,
             'valmax': 2,
             'valinit': 0,
-            'valfmt': '%.4s $\pi$',
+            'valfmt': '%.2f $\pi$',
             'initcolor': 'none',
             # 'edgecolor': 'black',
             'track_color': '#f2f2f2',
@@ -71,23 +84,43 @@ class BeamformingPlot:
         }
 
         self.aod_range = np.linspace(self.user_aods[0] - 0.05, self.user_aods[-1] + 0.05, 1000)
+        self.user_aod_range_idx = []
+        for user_id in range(self.user_num):
+            self.user_aod_range_idx.append(np.argmin(np.abs(self.user_aods[user_id] - self.aod_range)))
 
         self.colors = [self.cp3['blue2'], self.cp3['red2'], 'black']
 
-        self.font = {
+        self.font_main = {
             'family': 'sans-serif',
             # 'weight': 'bold',
-            'size': 22
+            'size': 22,
         }
+        self.relative_main_font_size = get_relative_font_size(self.font_main['size'], self.window_height)
 
-        self.relative_font_size = self.font['size'] * (96 / 72) / window_height  # pt to px conversion
+        self.font_title = {
+            'size': 40,
+            'weight': 'bold',
+            # 'color': self.cp3['blue2'],
+        }
+        self.relative_title_font_size = get_relative_font_size(self.font_title['size'], self.window_height)
 
-        mpl.rc('font', **self.font)
+        mpl.rc('font', **self.font_main)
         mpl.rc('lines', linewidth=2)
         mpl.rcParams['toolbar'] = 'None'
 
         self.fig, self.axes = plt.subplots(nrows=2, ncols=1, sharex=True)
         self.fig.canvas.manager.full_screen_toggle()
+
+        self.axes[0].set_ylim([0, 2.2])
+        self.axes[1].set_ylim([0, 2.5])
+
+        for ax in self.axes:
+            ax.set_xlim([self.aod_range[0], self.aod_range[-1]])
+
+        for ax in self.axes:
+            ax.grid(visible=True, axis='y')
+
+        self.axes[1].set_xticks([])
 
         self.ax_overlapplot = self.axes[0].inset_axes((0.06, 0.6, 0.2, 0.3))
         self.lines_overlapplot = []
@@ -96,11 +129,53 @@ class BeamformingPlot:
         self.ax_overlapplot.set_xticks([])
         self.ax_overlapplot.set_yticks([])
 
+        self.result_text = self.axes[1].text(
+            self.user_aods[-1]*1.015, 2.0, '',
+            bbox=dict(
+                facecolor='white',
+                edgecolor='black',
+                boxstyle='round',
+            )
+        )
+
         self.axes[0].indicate_inset(
             bounds=(self.user_aods[0] - 0.001, 0, 0.002, 0.1),
             inset_ax=self.ax_overlapplot,
             edgecolor='black',
         )
+
+        # set title
+        self.title_text = self.fig.text(
+            self.button_pad_horizontal,
+            1 - self.button_pad_vertical - self.logo_img_height_relative - self.relative_title_font_size - self.button_pad_vertical/2,
+            '',
+            fontdict=self.font_title,
+        )
+        self.subtitle_text = self.fig.text(
+            self.button_pad_horizontal,
+            1 - self.button_pad_vertical - self.logo_img_height_relative - self.relative_title_font_size - self.button_pad_vertical/2 - self.relative_main_font_size - self.button_pad_vertical/4,
+            '',
+            fontdict=self.font_main,
+        )
+
+        self.scenario_images = {
+            '2-2': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-2.pdf'))[0],
+            '2-3': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-3.pdf'))[0],
+            '2-4': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-4.pdf'))[0],
+            '3-2': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-2.pdf'))[0],
+            '3-3': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-3.pdf'))[0],
+            '3-4': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-4.pdf'))[0],
+        }
+        self.scenario_figure_axis = self.fig.add_axes(
+            (
+                1 - self.scenario_image_width - 3 * self.button_width - self.button_pad_horizontal,
+                1 - self.scenario_image_height - self.button_pad_vertical,
+                self.scenario_image_width,
+                self.scenario_image_height,
+            ),
+        )
+        self.scenario_figure_axis.axis('off')
+        self.scenario_figure = None
 
         # place logos
         logo_paths = [
@@ -112,10 +187,11 @@ class BeamformingPlot:
             for logo_path in logo_paths
         ]
         for logo_id, logo_image in enumerate(logo_images):
-            self.fig.figimage(logo_image.resize((
-                get_width_rescale_constant_aspect_ratio(logo_image, self.logo_img_height),
-                self.logo_img_height,
-            )), xo=15 + logo_id * 300, yo=int(window_height - self.logo_img_height - 15)
+            self.fig.figimage(
+                logo_image.resize((
+                    get_width_rescale_constant_aspect_ratio(logo_image, self.logo_img_height),
+                    self.logo_img_height,
+                )), xo=15 + logo_id * 300, yo=int(self.window_height - self.logo_img_height - 15)
             )
 
         self.lines_power_gain = []
@@ -158,11 +234,16 @@ class BeamformingPlot:
         self.button_language_toggle.on_clicked(self.toggle_language)
         self.button_user_toggle.on_clicked(self.toggle_user_number)
 
-        self.build_plot(antenna_num=self.antenna_num)
+        self.fig.subplots_adjust(top=0.74, right=0.65, left=0.1, bottom=0.08)
+
+        self.build_plot()
 
     def clear_plot(
             self,
     ) -> None:
+        """
+        Delete non-static elements of the figure
+        """
 
         for slider_axes_user in self.slider_axes:
             for ax in slider_axes_user:
@@ -193,6 +274,11 @@ class BeamformingPlot:
             del line
         self.lines_overlapplot = []
 
+        if self.scenario_figure:
+            self.scenario_figure.remove()
+            del self.scenario_figure
+            self.scenario_figure = None
+
         for text in self.text_user_pos:
             text.remove()
             del text
@@ -207,12 +293,17 @@ class BeamformingPlot:
 
     def build_plot(
             self,
-            antenna_num: int,
     ) -> None:
+        """
+        Arrange non-static elements of the plot
+        """
 
         self.clear_plot()
 
-        # make initial lines
+        # set scenario figure
+        self.scenario_figure = self.scenario_figure_axis.imshow(self.scenario_images[f'{self.user_num}-{self.antenna_num}'])
+
+        # set main axes lines
         w_precoder = np.exp(1j * np.zeros((self.antenna_num, self.user_num)))
 
         power_gains_users, signal_to_interference_ratio_per_user = self.calculate_data(w_precoder)
@@ -225,6 +316,10 @@ class BeamformingPlot:
                 self.axes[1].plot(self.aod_range, signal_to_interference_ratio_per_user[user_id, :],
                                   color=self.colors[user_id])[0])
 
+        # set result text
+        sum_sinr = sum(np.maximum(0, np.diagonal(signal_to_interference_ratio_per_user[:, self.user_aod_range_idx])))
+        self.result_text.set_text(f'{sum_sinr:.2f}')
+
         # mark user positions
         for user_id, user_aod in enumerate(self.user_aods):
             for ax in self.axes:
@@ -235,8 +330,6 @@ class BeamformingPlot:
                 self.axes[0].text(user_aod, -0.15, s='', color=self.colors[user_id],
                                   verticalalignment='top', horizontalalignment='center'))
 
-            # nearest_aod = find_nearest(self.aod_range, user_coordinate[2])
-            # nearest_aod_idx = np.where(self.aod_range == nearest_aod)[0][0]
             self.axes[0].vlines(user_aod, 0, 20, ls=':', color=self.colors[user_id])
             self.axes[1].vlines(user_aod, 0, 15, ls=':', color=self.colors[user_id])
 
@@ -247,16 +340,16 @@ class BeamformingPlot:
                 self.ax_overlapplot.plot(np.linspace(0, 2 * np.pi, 100), np.sin(np.linspace(0, 2 * np.pi, 100) - angle),
                                          color=self.colors[0])[0])
 
-        # place user texts for antennas
+        # place user texts for antenna sliders
         for user_id in range(self.user_num):
             self.text_user_antennas.append(
                 self.fig.text(
                     x=1 - 3 * self.button_width - self.button_pad_horizontal,
                     y=(
                             1 - self.button_pad_vertical - 2 * self.button_height - self.button_pad_vertical
-                            - (user_id+1) * self.relative_font_size
+                            - (user_id+1) * self.relative_main_font_size
                             - user_id * self.antenna_num * self.slider_height
-                            - user_id * .5 * self.relative_font_size  # extra inter-user pad
+                            - user_id * .5 * self.relative_main_font_size  # extra inter-user pad
                     ),
                     s='',
                     color=self.colors[user_id],
@@ -271,16 +364,16 @@ class BeamformingPlot:
                     1 - 3 * self.button_width - self.button_pad_horizontal + 0.1,
                     (
                             1 - self.button_pad_vertical - 2 * self.button_height - self.button_pad_vertical
-                            - (user_id+1) * self.relative_font_size
+                            - (user_id+1) * self.relative_main_font_size
                             - (antenna_id+1) * self.slider_height
 
                             - user_id * self.antenna_num * self.slider_height
-                            - user_id * .5 * self.relative_font_size  # extra inter-user pad
+                            - user_id * .5 * self.relative_main_font_size  # extra inter-user pad
                     ),
                     0.15,
                     self.slider_height,
                 ))
-                for antenna_id in range(antenna_num)
+                for antenna_id in range(self.antenna_num)
             ]
             for user_id in range(self.user_num)
         ]
@@ -294,7 +387,7 @@ class BeamformingPlot:
                     handle_style={'facecolor': self.colors[user_id]},
                     **self.slider_args
                 )
-                for antenna_id in range(antenna_num)
+                for antenna_id in range(self.antenna_num)
             ]
             for user_id in range(self.user_num)
         ]
@@ -302,16 +395,6 @@ class BeamformingPlot:
         for sliders_user in self.sliders:
             for slider in sliders_user:
                 slider.on_changed(self.update_plots)
-
-        self.fig.subplots_adjust(top=0.81, right=0.65)
-        self.axes[0].set_ylim([0, 2.2])
-        self.axes[1].set_ylim([0, 2.5])
-        for ax in self.axes:
-            ax.set_xlim([self.aod_range[0], self.aod_range[-1]])
-        for ax in self.axes:
-            ax.grid(visible=True, axis='y')
-
-        self.axes[1].set_xticks([])
 
         self.set_strings()
 
@@ -339,7 +422,7 @@ class BeamformingPlot:
     def calculate_data(
             self,
             w_precoder: np.ndarray,
-    ):
+    ) -> tuple[np.ndarray, np.ndarray]:
 
         norm_factor = np.sqrt(1 / np.trace(np.matmul(w_precoder.conj().T, w_precoder)))
         normalized_precoder = norm_factor * w_precoder
@@ -360,6 +443,7 @@ class BeamformingPlot:
                     + 0.01  # regularizing noise
                 )
             )
+
         return power_gains_users, np.log10(signal_to_interference_ratio_per_user)
 
     def update_plots(self, val):
@@ -374,6 +458,14 @@ class BeamformingPlot:
         for line_id, line in enumerate(self.lines_signal_to_interference):
             line.set_ydata(signal_to_interference_ratio_per_user[line_id, :])
 
+        sum_sinr = sum(
+            np.maximum(
+                0,
+                np.diagonal(signal_to_interference_ratio_per_user[:, self.user_aod_range_idx])
+            )
+        )
+        self.result_text.set_text(f'{sum_sinr:.2f}')
+
         angles = self.calculate_gain_at_userpos(user_id=0, w_precoder=w_precoder)
         for angle, line in zip(angles, self.lines_overlapplot):
             line.set_ydata(np.sin(np.linspace(0, 2 * np.pi, 100) - angle))
@@ -385,43 +477,56 @@ class BeamformingPlot:
             event,
     ) -> None:
         self.antenna_num = 2
-        self.build_plot(antenna_num=2)
+        self.build_plot()
 
     def build_3_ant(
             self,
             event,
     ) -> None:
         self.antenna_num = 3
-        self.build_plot(antenna_num=3)
+        self.build_plot()
 
     def build_4_ant(
             self,
             event,
     ) -> None:
         self.antenna_num = 4
-        self.build_plot(antenna_num=4)
+        self.build_plot()
 
     def solve(
             self,
             event,
     ) -> None:
-
-        pass
+        """
+        Pre-computed hard coded solutions
+        """
 
         if self.user_num == 2:
             if self.antenna_num == 2:
-                vals = np.array([5.5364037, 2.0375473, 1.3439522, 6.2334394]) / np.pi
+                vals = np.array([1.33392694, 0.00217974, 2., 1.336326])  # 3.7434581600273287
 
             elif self.antenna_num == 3:
-                vals = np.array([4.756055, 0.52431905, 5.7824655, 5.7539988, 0.60500973, 4.7410083]) / np.pi
+                vals = np.array([1.43766934, 0.32953251, 1.77591245, 1.9991804, 0.11070739, 1.65571502])  # 4.348553352347908
 
             elif self.antenna_num == 4:
-                vals = (np.array([1.1142184, -0.8014092, 2.0657315, -2.0752404, 2.2063696, -1.8503344,
-                                  3.1415927, -3.1415927]) + np.pi) / np.pi
-        else:
-            vals = np.zeros(self.config.sat_nr * self.antenna_num * self.config.user_nr)
+                vals = np.array([1.65264511e+00, 3.45269947e-01, 1.99999797e+00, 1.82675364e-06, 1.99985408e+00, 1.98439029e+00, 3.54067908e-01, 1.65027350e+00])  # 4.364126149316508
 
-        vals = vals.reshape((self.config.sat_nr * self.antenna_num, self.config.user_nr))
+        elif self.user_num == 3:
+            if self.antenna_num == 2:
+                vals = np.array([0.17, 1.11987319, 0.06849515, 0.49781637, 0.45381053, 1.40067422])  # 1.82, all power left
+                # vals = np.array([0.27038586, 0.10755455, 0.310714, 0.9434595, 0.7684472, 0.0134297 ])  # 1.82, all power right
+
+            if self.antenna_num == 3:
+                vals = np.array([0.767586  , 1.23849644, 0.0155399 , 1.11047316, 0.2418609, 1.6794695 , 1.44843245, 1.2447759 , 1.33063957])  #  3.98
+
+            if self.antenna_num == 4:
+                vals = np.array([1.8236148, 0.6236967, 0.99348598, 0.4835393, 1.30029637, 0.3300958, 0.7820382, 0.3140922, 0.0082575, 1.44706702, 0.9572313 ,1.3421065 ])  # 5.08
+                # vals = np.array([0.4544177 , 1.0933318 , 1.1671627 , 1.09039766, 0.4608915 , .4944167 , 1.4022036 , 1.43636626, 0.1882944 , 0.0646899 , 0.77249672, 1.52867377])  # 5.08
+
+        else:
+            vals = np.zeros(self.config.sat_nr * self.antenna_num * self.user_num)
+
+        vals = vals.reshape((self.config.sat_nr * self.antenna_num, self.user_num))
 
         for sliders_user_id, sliders_user in enumerate(self.sliders):
             for slider_id, slider in enumerate(sliders_user):
@@ -468,7 +573,11 @@ class BeamformingPlot:
 
         self.user_num = len(self.users_spherical_coordinates)
 
-        self.build_plot(antenna_num=self.antenna_num)
+        self.user_aod_range_idx = []
+        for user_id in range(self.user_num):
+            self.user_aod_range_idx.append(np.argmin(np.abs(self.user_aods[user_id] - self.aod_range)))
+
+        self.build_plot()
 
     def _load_palettes(
             self,
@@ -512,8 +621,8 @@ class BeamformingPlot:
             self,
     ) -> None:
 
-        self.axes[0].set_title(f'{self.strings["plot_title"]}: {self.antenna_num} {self.strings["antennapl"]}',
-                               loc='left', fontdict={'fontsize': 40})
+        self.title_text.set_text(self.strings["plot_title"])
+        self.subtitle_text.set_text(f'{self.antenna_num} {self.strings["antennapl"]}, {self.user_num} {self.strings["userpl"]}')
 
         self.axes[1].set_xlabel(self.strings['direction'])
         self.axes[0].set_ylabel(self.strings['power_gain'])

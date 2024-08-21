@@ -1,0 +1,51 @@
+
+\begin{tikzpicture}
+	
+	\input{illustrations/satellite.sty}
+	\input{illustrations/person.sty}
+	
+	\tikzstyle{antenna} = [
+		draw,
+		circle,
+		inner sep=2pt,
+		fill=black,
+	]
+	
+	\tikzstyle{a} = [%
+		thick,
+	]
+	
+	\tikzstyle{a0} = [%
+		a,
+		uniblue1,
+	]
+	\tikzstyle{a1} = [%
+		a,
+		unired2,
+	]
+	\tikzstyle{a2} = [%
+		a,
+		black,
+	]
+	
+	\satellite{(0,0)}{0}{1}{}
+	\person{(-1.5, -3)}{0}{1}{uniblue1}
+	\person{(0, -3)}{0}{1}{unired2}
+	\person{(1.5, -3)}{0}{1}{black}
+	
+	\newcommand{\stepsizeantennas}{0.5}  % (max-min) / (num_antennas - 1)
+	\newcommand{\stepsizeusers}{1.5}
+		
+	\foreach \antennaid in {0, 1, 2}
+		\node (a\antennaid) at (-0.5 + \antennaid * \stepsizeantennas, -0.5) [antenna] {};
+		
+	\foreach \userid in {0, 1, 2}
+		\node (u\userid) at (-1.5 + \userid * \stepsizeusers, -2.1)  [] {};
+		
+	\foreach \userid in {0, 1, 2}
+		\foreach \antennaid in {0, 1, 2}
+			\draw [a\userid] (a\antennaid) -- (u\userid);
+		
+	
+
+\end{tikzpicture}
