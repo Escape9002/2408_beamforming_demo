@@ -63,7 +63,7 @@ class BeamformingPlot:
         self.user_num = len(self.users_spherical_coordinates)
         self.antenna_num = 2
 
-        self.logo_img_height = 100  # in pixels
+        self.logo_img_height = int(0.09 * self.window_height)  # in pixels
         self.button_width = 0.1  # relative
         self.button_height = 0.1  # relative
         self.button_pad_horizontal = 30 / self.window_width  # relative
