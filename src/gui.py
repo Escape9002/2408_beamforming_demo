@@ -32,6 +32,9 @@ def get_relative_font_size(font_size, window_height_px) -> float:
     """
     return font_size * (96 / 72) / window_height_px
 
+def px_to_pt(pt) -> float:
+    return pt * 72 / 96
+
 
 class BeamformingPlot:
 
@@ -98,12 +101,12 @@ class BeamformingPlot:
         self.font_main = {
             'family': 'sans-serif',
             # 'weight': 'bold',
-            'size': 22,
+            'size': int(px_to_pt(0.025*self.window_height)),
         }
         self.relative_main_font_size = get_relative_font_size(self.font_main['size'], self.window_height)
 
         self.font_title = {
-            'size': 40,
+            'size': int(px_to_pt(0.05*self.window_height)),
             'weight': 'bold',
             # 'color': self.cp3['blue2'],
         }
