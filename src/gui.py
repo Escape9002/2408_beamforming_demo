@@ -194,12 +194,14 @@ class BeamformingPlot:
             Image.open(logo_path)
             for logo_path in logo_paths
         ]
+        logo_widths = []
         for logo_id, logo_image in enumerate(logo_images):
+            logo_widths.append(get_width_rescale_constant_aspect_ratio(logo_image, self.logo_img_height))
             self.fig.figimage(
                 logo_image.resize((
-                    get_width_rescale_constant_aspect_ratio(logo_image, self.logo_img_height),
+                    logo_widths[-1],
                     self.logo_img_height,
-                )), xo=15 + logo_id * 300, yo=int(self.window_height - self.logo_img_height - 15)
+                )), xo=self.button_pad_horizontal*self.window_width + sum(logo_widths[:-1]), yo=int(self.window_height - self.logo_img_height - self.button_pad_vertical*0.8*self.window_height)
             )
 
         self.lines_power_gain = []
