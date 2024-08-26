@@ -22,6 +22,10 @@ venv/
 /.pylintrc
 nohup.out
 
+/src/satellite_figures/*.ps
+/src/satellite_figures/*.eps
+/src/satellite_figures/*.pdf
+
 *.aux
 *.auxlock
 *.dpth
