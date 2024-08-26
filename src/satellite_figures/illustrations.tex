@@ -7,11 +7,14 @@
 	external,
 }
 \tikzset{%
-	external/system call={pdflatex \tikzexternalcheckshellescape -halt-on-error 
+	external/system call={
+		pdflatex \tikzexternalcheckshellescape -halt-on-error 
 		-interaction=batchmode -jobname "\image" "\texsource" && % or ;
-		pdftops -eps "\image".pdf
+		pdf2ps "\image".pdf
 	}
 }
+%\tikzset{external/system call/.append=
+%	{; convert -density 300 -transparent white "\image.pdf" "\image.png"},}
 
 \tikzexternalize[]
 
@@ -45,4 +48,9 @@
 	\input{2ant3usr.tex}
 	\input{3ant3usr.tex}
 	\input{4ant3usr.tex}
+	\input{usr-.tex}
+	\input{usr+.tex}
+	\input{2antenna}
+	\input{3antenna}
+	\input{4antenna}
 \end{document}

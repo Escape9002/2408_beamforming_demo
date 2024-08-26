@@ -1,0 +1,69 @@
+
+\usetikzlibrary{
+	math,  % required for calculations
+}
+
+\def\antenna#1#2#3#4{
+	\begin{scope}[shift={#1}, rotate=#2, scale=#3, thick, #4]
+		\tikzmath{%
+			real \footwidth \topwidth \antennaheight \antennaheadradius;
+			\footwidth = 0.2;
+			\topwidth = 0.06;
+			\antennaheight = 1.2;
+			\antennaheadradius = 0.15;
+			real \footleftx \footrightx;
+			\footleftx = -0.5 * \footwidth;
+			\footrightx = 0.5 * \footwidth;
+			real \topleftx \toprightx;
+			\topleftx = -0.5 * \topwidth;
+			\toprightx = 0.5 * \topwidth;
+			real \wavearc \waveradius;
+			\wavearc = 100;
+			\waveradius = 0.4;
+			\waveradiusouter = 0.6;
+			\arcrightstartdeg = 0 - 0.5 * \wavearc;
+			\arcrightenddeg = 0 + 0.5 * \wavearc;
+			\arcrightinnerstartx = 0 + \waveradius * cos(\arcrightstartdeg);
+			\arcrightinnerstarty = \antennaheight + \waveradius * sin(\arcrightstartdeg);
+			\arcrightouterstartx = 0 + \waveradiusouter * cos(\arcrightstartdeg);
+			\arcrightouterstarty = \antennaheight + \waveradiusouter * sin(\arcrightstartdeg);
+			\arcleftstartdeg = 180 - 0.5 * \wavearc;
+			\arcleftenddeg = 180 + 0.5 * \wavearc;
+			\arcleftinnerstartx = 0 + \waveradius * cos(\arcleftstartdeg);
+			\arcleftinnerstarty = \antennaheight + \waveradius * sin(\arcleftstartdeg);
+			\arcleftouterstartx = 0 + \waveradiusouter * cos(\arcleftstartdeg);
+			\arcleftouterstarty = \antennaheight + \waveradiusouter * sin(\arcleftstartdeg);
+		}
+	
+		\filldraw [rounded corners=1]
+			(\footleftx, 0)
+			-- (\footrightx, 0)
+			-- (\toprightx, \antennaheight)
+			-- (\topleftx, \antennaheight)
+			-- cycle;
+%			;
+
+		\filldraw [] (0, \antennaheight) circle (\antennaheadradius);
+		
+		
+		 % waves
+		\draw [ultra thick]
+			(\arcrightinnerstartx, \arcrightinnerstarty)
+			arc (\arcrightstartdeg:\arcrightenddeg:\waveradius)
+			;
+			
+		\draw [ultra thick]
+			(\arcrightouterstartx, \arcrightouterstarty)
+			arc (\arcrightstartdeg:\arcrightenddeg:\waveradiusouter);
+			
+		\draw [ultra thick]
+			(\arcleftinnerstartx, \arcleftinnerstarty)
+			arc (\arcleftstartdeg:\arcleftenddeg:\waveradius)
+			;
+			
+		\draw [ultra thick]
+			(\arcleftouterstartx, \arcleftouterstarty)
+			arc (\arcleftstartdeg:\arcleftenddeg:\waveradiusouter);
+		
+	\end{scope}
+}

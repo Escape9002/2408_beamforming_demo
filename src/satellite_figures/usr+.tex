@@ -1,0 +1,38 @@
+
+\begin{tikzpicture}
+	
+	\input{illustrations/satellite.sty}
+	\input{illustrations/person.sty}
+	
+	\tikzstyle{antenna} = [
+		draw,
+		circle,
+		inner sep=2pt,
+		fill=black,
+	]
+	
+	\tikzstyle{a} = [%
+		thick,
+	]
+	
+	\tikzstyle{a0} = [%
+		a,
+		uniblue1,
+	]
+	\tikzstyle{a1} = [%
+		a,
+		unired2,
+	]
+	\tikzstyle{a2} = [%
+		a,
+		black,
+	]
+	
+	\person{(0, 0)}{0}{1}{black}
+
+	\node (plus)
+	at (0, -0.1)
+	[circle, draw, inner sep=0, fill=white]
+	{\Large$+$};
+
+\end{tikzpicture}
