@@ -9,7 +9,6 @@ venv/
 /models/
 /outputs/
 /references/
-/reports/
 /src/notebooks/
 
 /src/config/config.py
