@@ -40,15 +40,10 @@ class BeamformingPlot:
 
     def __init__(self):
 
-        self.language = 'en'
 
+        self._load_locales()
         self._load_palettes()
         self._load_strings(self.language)
-
-        # get window info todo there has to be a better way to get this data
-        root = tkinter.Tk()
-        root.withdraw()
-        self.window_width, self.window_height = root.winfo_screenwidth(), root.winfo_screenheight()
 
         self.config = Config()
 
@@ -61,7 +56,6 @@ class BeamformingPlot:
         self.user_aods = get_aods(self.own_spherical_coordinates, self.users_spherical_coordinates)
 
         self.user_num = len(self.users_spherical_coordinates)
-        self.antenna_num = 2
 
         self.logo_img_height = int(0.09 * self.window_height)  # in pixels
         self.button_width = 0.1  # relative
@@ -76,7 +70,6 @@ class BeamformingPlot:
         self.overlap_plot_height = 0.10  # relative
         self.slider_height = 0.05  # relative, slider uses half available height
         self.slider_pad_vertical = 0.00  # relative
-
 
         self.slider_args = {
             'valmin': 0,
@@ -166,14 +159,6 @@ class BeamformingPlot:
             fontdict=self.font_main,
         )
 
-        self.scenario_images = {
-            '2-2': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-2.pdf'))[0],
-            '2-3': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-3.pdf'))[0],
-            '2-4': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '2-4.pdf'))[0],
-            '3-2': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-2.pdf'))[0],
-            '3-3': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-3.pdf'))[0],
-            '3-4': pdf2image.convert_from_path(Path(Path.cwd(), 'src', '3-4.pdf'))[0],
-        }
         self.scenario_figure_axis = self.fig.add_axes(
             (
                 1 - self.scenario_image_width - 3 * self.button_width - self.button_pad_horizontal,
@@ -183,12 +168,12 @@ class BeamformingPlot:
             ),
         )
         self.scenario_figure_axis.axis('off')
-        self.scenario_figure = None
+        self.scenario_figure = self.scenario_figure_axis.imshow(self.scenario_images[f'{self.user_num}-{self.antenna_num}'])
 
         # place logos
         logo_paths = [
-            Path(Path.cwd(), 'src', 'logo_unilogo.png'),
-            Path(Path.cwd(), 'src', 'logo_ANT.png'),
+            Path(self.images_path, 'logo_unilogo.png'),
+            Path(self.images_path, 'logo_ANT.png'),
         ]
         logo_images = [
             Image.open(logo_path)
@@ -214,28 +199,28 @@ class BeamformingPlot:
         self.text_user_antennas = []
 
         self.ax_button_2ant = self.fig.add_axes((1 - 3 * self.button_width - self.button_pad_horizontal,
-                                                 1 - self.button_height - self.button_pad_vertical, self.button_width,
+                                                 1 - 2 * self.button_height - self.button_pad_vertical, self.button_width,
                                                  self.button_height))
         self.ax_button_3ant = self.fig.add_axes((1 - 2 * self.button_width - self.button_pad_horizontal,
-                                                 1 - self.button_height - self.button_pad_vertical, self.button_width,
+                                                 1 - 2 * self.button_height - self.button_pad_vertical, self.button_width,
                                                  self.button_height))
         self.ax_button_4ant = self.fig.add_axes((1 - 1 * self.button_width - self.button_pad_horizontal,
-                                                 1 - self.button_height - self.button_pad_vertical, self.button_width,
+                                                 1 - 2 * self.button_height - self.button_pad_vertical, self.button_width,
                                                  self.button_height))
-        self.ax_button_ai_solution = self.fig.add_axes((1 - 1 * self.button_width - self.button_pad_horizontal,
-                                                        1 - 2 * self.button_height - self.button_pad_vertical,
+        self.ax_button_ai_solution = self.fig.add_axes((1 - 2 * self.button_width - self.button_pad_horizontal,
+                                                        1 - 1 * self.button_height - self.button_pad_vertical,
                                                         self.button_width, self.button_height))
-        self.ax_button_language_toggle = self.fig.add_axes((1 - 2 * self.button_width - self.button_pad_horizontal,
-                                                            1 - 2 * self.button_height - self.button_pad_vertical,
+        self.ax_button_language_toggle = self.fig.add_axes((1 - 1 * self.button_width - self.button_pad_horizontal,
+                                                            1 - 1 * self.button_height - self.button_pad_vertical,
                                                             self.button_width, self.button_height))
         self.ax_button_user_toggle = self.fig.add_axes((1 - 3 * self.button_width - self.button_pad_horizontal,
-                                                        1 - 2 * self.button_height - self.button_pad_vertical,
+                                                        1 - 1 * self.button_height - self.button_pad_vertical,
                                                         self.button_width, self.button_height))
         self.button_2_ant = Button(self.ax_button_2ant, '', **self.button_args)
         self.button_3_ant = Button(self.ax_button_3ant, '', **self.button_args)
         self.button_4_ant = Button(self.ax_button_4ant, '', **self.button_args)
         self.button_ai_solution = Button(self.ax_button_ai_solution, '', **self.button_args)
-        self.button_language_toggle = Button(self.ax_button_language_toggle, '', **self.button_args)
+        self.button_language_toggle = Button(self.ax_button_language_toggle, '', **self.button_args, image=self.language_images['de'] if self.language=='en' else self.language_images['en'])
         self.button_user_toggle = Button(self.ax_button_user_toggle, '', **self.button_args)
         self.button_2_ant.on_clicked(self.build_2_ant)
         self.button_3_ant.on_clicked(self.build_3_ant)
@@ -243,6 +228,20 @@ class BeamformingPlot:
         self.button_ai_solution.on_clicked(self.solve)
         self.button_language_toggle.on_clicked(self.toggle_language)
         self.button_user_toggle.on_clicked(self.toggle_user_number)
+
+        # imshow changes the axis box and there's no easy way to stop it so we just resize it back to before
+        self.ax_button_language_toggle.set_box_aspect((self.button_height * self.window_height) / (self.button_width * self.window_width))
+        self.ax_button_language_toggle.set_ylim((1200, -300))
+        self.ax_button_ai_solution.imshow(self.ai_image, interpolation=None)
+        self.ax_button_ai_solution.set_ylim((400, -100))
+        self.ax_button_ai_solution.set_box_aspect((self.button_height * self.window_height) / (self.button_width * self.window_width))
+        self.ax_button_user_toggle.imshow(self.toggle_user_images['less'] if self.user_num == 3 else self.toggle_user_images['more'], interpolation=None)
+        self.ax_button_user_toggle.set_ylim((600, -200))
+        self.ax_button_user_toggle.set_box_aspect((self.button_height * self.window_height) / (self.button_width * self.window_width))
+        for antenna_nr, ax_button in zip(range(2, 5), [self.ax_button_2ant, self.ax_button_3ant, self.ax_button_4ant]):
+            ax_button.imshow(self.antenna_images[f'{antenna_nr}'])
+            ax_button.set_ylim((1200, -300))
+            ax_button.set_box_aspect((self.button_height * self.window_height) / (self.button_width * self.window_width))
 
         self.fig.subplots_adjust(top=0.74, right=0.65, left=0.1, bottom=0.08)
 
@@ -284,11 +283,6 @@ class BeamformingPlot:
             del line
         self.lines_overlapplot = []
 
-        if self.scenario_figure:
-            self.scenario_figure.remove()
-            del self.scenario_figure
-            self.scenario_figure = None
-
         for text in self.text_user_pos:
             text.remove()
             del text
@@ -311,7 +305,7 @@ class BeamformingPlot:
         self.clear_plot()
 
         # set scenario figure
-        self.scenario_figure = self.scenario_figure_axis.imshow(self.scenario_images[f'{self.user_num}-{self.antenna_num}'])
+        self.scenario_figure = self.scenario_figure_axis.images[0].set_data(self.scenario_images[f'{self.user_num}-{self.antenna_num}'])
 
         # set main axes lines
         w_precoder = np.exp(1j * np.zeros((self.antenna_num, self.user_num)))
@@ -549,12 +543,16 @@ class BeamformingPlot:
 
         if self.language == 'en':
             self.language = 'de'
+            image_language_other = self.language_images['en']
         elif self.language == 'de':
             self.language = 'en'
+            image_language_other = self.language_images['de']
 
         self._load_strings(language=self.language)
-
         self.set_strings()
+
+        self.ax_button_language_toggle.images[0].set_data(image_language_other)
+
 
         self.fig.canvas.draw_idle()
 
@@ -563,7 +561,7 @@ class BeamformingPlot:
             event,
     ) -> None:
 
-        if len(self.users_spherical_coordinates) == 2:
+        if self.user_num == 2:
 
             self.users_spherical_coordinates = [
                 np.array([1, np.pi / 2, np.pi / 2 + 0.2]),
@@ -571,13 +569,19 @@ class BeamformingPlot:
                 np.array([1, np.pi / 2, np.pi / 2 - 0.2]),
             ]
 
-        elif len(self.users_spherical_coordinates) == 3:
+            image_users_other = self.toggle_user_images['less']
+
+        elif self.user_num == 3:
 
             self.users_spherical_coordinates = [
                 np.array([1, np.pi / 2, np.pi / 2 + 0.2]),
                 # np.array([1, np.pi / 2, np.pi / 2]),
                 np.array([1, np.pi / 2, np.pi / 2 - 0.2]),
             ]
+
+            image_users_other = self.toggle_user_images['more']
+
+        self.ax_button_user_toggle.images[0].set_data(image_users_other)
 
         self.user_aods = get_aods(self.own_spherical_coordinates, self.users_spherical_coordinates)
 
@@ -588,6 +592,50 @@ class BeamformingPlot:
             self.user_aod_range_idx.append(np.argmin(np.abs(self.user_aods[user_id] - self.aod_range)))
 
         self.build_plot()
+
+    def _load_locales(
+            self,
+    ) -> None:
+
+        self.project_root_path = Path(Path(__file__).parent, '..').resolve()
+        self.images_path = Path(self.project_root_path, 'src', 'images')
+
+        # get window info todo there has to be a better way to get this data
+        root = tkinter.Tk()
+        root.withdraw()
+        self.window_width, self.window_height = root.winfo_screenwidth(), root.winfo_screenheight()
+
+        self.language = 'en'  # initial
+        self.antenna_num = 2  # initial
+        self.user_num = 2  # initial
+
+        self.ai_image = Image.open(Path(self.images_path, 'robot.png'))
+
+        self.toggle_user_images = {
+            'less': Image.open(Path(self.images_path, 'usrminus.png')),
+            'more': Image.open(Path(self.images_path, 'usrplus.png')),
+        }
+
+        self.language_images = {
+            'de': Image.open(Path(self.images_path, 'flag_DE.png')),
+            'en': Image.open(Path(self.images_path, 'flag_EN.png')),
+        }
+
+        self.scenario_images = {
+            '2-2': pdf2image.convert_from_path(Path(self.images_path, '2-2.pdf'))[0],
+            '2-3': pdf2image.convert_from_path(Path(self.images_path, '2-3.pdf'))[0],
+            '2-4': pdf2image.convert_from_path(Path(self.images_path, '2-4.pdf'))[0],
+            '3-2': pdf2image.convert_from_path(Path(self.images_path, '3-2.pdf'))[0],
+            '3-3': pdf2image.convert_from_path(Path(self.images_path, '3-3.pdf'))[0],
+            '3-4': pdf2image.convert_from_path(Path(self.images_path, '3-4.pdf'))[0],
+        }
+
+        self.antenna_images = {
+            '2': Image.open(Path(self.images_path, '2ant.png')),
+            '3': Image.open(Path(self.images_path, '3ant.png')),
+            '4': Image.open(Path(self.images_path, '4ant.png')),
+        }
+
 
     def _load_palettes(
             self,
@@ -638,13 +686,13 @@ class BeamformingPlot:
         self.axes[0].set_ylabel(self.strings['power_gain'])
         self.axes[1].set_ylabel(self.strings['signal_strength'])
 
-        self.button_2_ant.label.set_text(f'2 {self.strings["antennapl"]}')
-        self.button_3_ant.label.set_text(f'3 {self.strings["antennapl"]}')
-        self.button_4_ant.label.set_text(f'4 {self.strings["antennapl"]}')
+        # self.button_2_ant.label.set_text(f'2 {self.strings["antennapl"]}')
+        # self.button_3_ant.label.set_text(f'3 {self.strings["antennapl"]}')
+        # self.button_4_ant.label.set_text(f'4 {self.strings["antennapl"]}')
 
-        self.button_ai_solution.label.set_text(self.strings['ai'])
-        self.button_language_toggle.label.set_text(self.strings['language_other'])
-        self.button_user_toggle.label.set_text(self.strings["less_users"] if self.user_num == 3 else self.strings["more_users"])
+        # self.button_ai_solution.label.set_text(self.strings['ai'])
+        # self.button_language_toggle.label.set_text(self.strings['language_other'])  # set button text
+        # self.button_user_toggle.label.set_text(self.strings["less_users"] if self.user_num == 3 else self.strings["more_users"])
 
         for user_id, text in enumerate(self.text_user_pos):
             text.set_text(f'{self.strings["user"]} {user_id+1}')
