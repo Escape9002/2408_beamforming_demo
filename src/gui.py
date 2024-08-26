@@ -388,7 +388,7 @@ class BeamformingPlot:
                     ax=self.slider_axes[user_id][antenna_id],
                     label='',
                     facecolor=self.colors[user_id],
-                    handle_style={'facecolor': self.colors[user_id]},
+                    handle_style={'facecolor': self.colors[user_id], 'size': self.slider_height * self.window_height / 4, 'edgecolor': 'white'},
                     **self.slider_args
                 )
                 for antenna_id in range(self.antenna_num)
