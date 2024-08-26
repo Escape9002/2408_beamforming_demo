@@ -1,7 +1,7 @@
 
 # Satellite Downlink Beamforming Demo
 
-We can form precodings by manipulating the phase of a precoding for every antenna-user-link.
+We can form transmission beams by manipulating the phase of a precoding for every antenna-user-link.
 Number of antennas and users can be varied.
 Pre-calculated "AI solutions" exist for every scenario. Note: These are approximations, not the optimum solution.
 
