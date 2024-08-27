@@ -672,7 +672,7 @@ class BeamformingPlot:
             language: str,
     ) -> None:
 
-        with open(Path(Path.cwd(), 'src', f'strings_{language}.json')) as file:
+        with open(Path(self.project_root_path, 'src', f'strings_{language}.json')) as file:
             self.strings = json.load(file)
 
     def set_strings(
