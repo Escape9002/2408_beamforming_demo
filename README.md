@@ -59,6 +59,11 @@ At the moment the Windows and Linux dependencies differ.
 To run under windows, please update the following libraries to these version (last checked 6th, December 2024):
 
 - tensorflow==2.15.0
-- tentensorflow-io-gcs-filesystem==0.31.0
+- tentensorflow-io-gcs-filesystem==0.31.0   
+
+reason:
+- [io-gcs: no wheel file for windows](https://github.com/tensorflow/tensorflow/issues/79581)
+- [tensorflow: no wheel for windows](https://blog.tensorflow.org/2023/11/whats-new-in-tensorflow-2-15.html)
+
 
 Windows doesnt support `float128` at the moment, please update line 16 of `src/utils/spherical_to_cartesian_coordinates.py` to use `float64` instead of `float128`. 
