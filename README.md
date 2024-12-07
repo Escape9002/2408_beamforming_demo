@@ -35,8 +35,25 @@ root
 
 ```
 
-## How to run
+## Quickstart
 This project uses `python3.11`
+
+### Ubuntu / Linux
+Under Ubuntu you can simply run the `init.sh` file, it will:
+- add the deadsnakes/ppa to your system
+- perform an apt update
+- apt install 
+- - software-properties-common
+- - python3.11 python3.11-venv python3.11-pip
+
+And then download and install the necessary python libraries into a virtual environment.
+
+To start the demo, you can run the `start.sh`, it will:
+- check wether you created your own `src/config/config*.py` files. If not, it will copy our templates and remove the `.default` label.
+- activate the venv created by `init.sh`
+- run the `src/gui.py`
+
+### Windows
 
 At the moment the Windows and Linux dependencies differ.  
 To run under windows, please update the following libraries to these version (last checked 6th, December 2024):
