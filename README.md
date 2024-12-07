@@ -5,7 +5,8 @@ We can form transmission beams by manipulating the phase of a precoding for ever
 Number of antennas and users can be varied.
 Pre-calculated "AI solutions" exist for every scenario. Note: These are approximations, not the optimum solution.
 
-The relevant file to start the GUI demo is `src/gui.py`.
+The relevant file to start the GUI demo is `src/gui.py`.  
+To use our templates, rename the `.py.default` files under `src/config/` to end in the normal `.py`.
 
 ![screenshot.png](reports/screenshot.png)
 
@@ -33,3 +34,14 @@ root
 |   +---images            |   gui images
 
 ```
+
+## How to run
+This project uses `python3.11`
+
+At the moment the Windows and Linux dependencies differ.  
+To run under windows, please update the following libraries to these version (last checked 6th, December 2024):
+
+- tensorflow==2.15.0
+- tentensorflow-io-gcs-filesystem==0.31.0
+
+Windows doesnt support `float128` at the moment, please update line 16 of `src/utils/spherical_to_cartesian_coordinates.py` to use `float64` instead of `float128`. 
